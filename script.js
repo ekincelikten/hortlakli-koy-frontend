@@ -1,33 +1,44 @@
-const socket = io();
+const socket = io('https://hortlakli-koy.onrender.com');
 let nickname = '';
+let role = '';
 
-document.getElementById('join-btn').onclick = () => {
+function joinGame() {
   nickname = document.getElementById('nickname').value;
-  if (nickname) socket.emit('joinGame', nickname);
-};
+  if (!nickname) return alert("Lütfen nick girin.");
+  socket.emit('joinGame', nickname);
+}
 
-socket.on('assignRole', ({ role, avatar }) => {
-  document.getElementById('phase-display').textContent = `Rol: ${role}`;
+socket.on('assignRole', (data) => {
+  role = data.role;
+  document.getElementById('role').innerText = 'Rol: ' + role;
 });
 
-socket.on('updatePlayers', players => {
-  const playersDiv = document.getElementById('players');
-  playersDiv.innerHTML = '';
+socket.on('phaseChange', (phase) => {
+  document.getElementById('phase').innerText = 'Faz: ' + (phase === 'day' ? 'Gündüz' : 'Gece');
+});
+
+socket.on('updatePlayers', (players) => {
+  const avatarsDiv = document.getElementById('avatars');
+  avatarsDiv.innerHTML = '';
   players.forEach(p => {
     const div = document.createElement('div');
-    div.className = 'player';
-    div.innerHTML = `<img src="${p.avatar}" width="100"><br>${p.nickname}`;
-    playersDiv.appendChild(div);
+    div.className = 'avatar';
+    div.innerHTML = `<img src="${p.avatar}" /><div>${p.nickname}</div>`;
+    avatarsDiv.appendChild(div);
   });
 });
 
-document.getElementById('send-btn').onclick = () => {
-  const msg = document.getElementById('chat-input').value;
-  if (msg) socket.emit('chat', msg);
-};
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  socket.emit('chatMessage', { text: msg });
+  input.value = '';
+}
 
-socket.on('chatMessage', msg => {
-  const m = document.createElement('div');
-  m.textContent = msg;
-  document.getElementById('messages').appendChild(m);
+socket.on('chatMessage', (msg) => {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.innerText = msg;
+  messages.appendChild(div);
 });
